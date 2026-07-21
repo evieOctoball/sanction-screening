@@ -10,7 +10,7 @@ from rapidfuzz import process, fuzz
 # 0. 页面基本配置
 # ==========================================
 st.set_page_config(
-    page_title="反洗钱与制裁名单自动化筛查工具",
+    page_title="Automated Sanction List Screener",
     page_icon="🛡️",
     layout="wide"
 )
@@ -66,7 +66,7 @@ def extract_names_from_pdf(pdf_file) -> list:
 # 2. 搭建 Streamlit UI 界面
 # ==========================================
 
-st.title("🛡️ Sanctionlist & Investors Databases 自动比对系统")
+st.title("Sanctionlist & Investors Databases 自动比对系统")
 st.markdown("上传客户 Excel 名单，并选择上传 **PDF 名单** 或 **直接粘贴邮件制裁内容** 进行比对。")
 
 st.divider()
@@ -104,7 +104,7 @@ with col_left:
 
     threshold = st.slider("相似度告警阈值 (%)", min_value=50, max_value=100, value=75, step=1)
     
-    btn_run = st.button("🚀 开始自动筛查", type="primary", use_container_width=True)
+    btn_run = st.button("开始自动筛查", type="primary", use_container_width=True)
 
 
 with col_right:
@@ -113,17 +113,17 @@ with col_right:
     if btn_run:
         # --- 校验 1: 检查客户 Excel ---
         if excel_file is None:
-            st.error("❌ 请先上传客户名单 Excel 文件！")
+            st.error("请先上传客户名单 Excel 文件！")
         else:
             try:
                 df_customers = pd.read_excel(excel_file)
             except Exception as e:
-                st.error(f"❌ 读取 Excel 失败: {e}")
+                st.error(f"读取 Excel 失败: {e}")
                 df_customers = None
 
             if df_customers is not None:
                 if name_column not in df_customers.columns:
-                    st.error(f"❌ 在 Excel 中没找到列名 [{name_column}]！Excel 现有列为：{list(df_customers.columns)}")
+                    st.error(f"在 Excel 中没找到列名 [{name_column}]！Excel 现有列为：{list(df_customers.columns)}")
                 else:
                     # --- 校验 2: 收集制裁名单数据 ---
                     with st.spinner("正在提取制裁名单数据..."):
@@ -134,10 +134,10 @@ with col_right:
                             sanction_names = extract_names_from_text(email_text)
 
                     if not sanction_names:
-                        st.error("❌ 未提取到任何有效的制裁姓名！请确认是否上传了 PDF 或在文本框中粘贴了邮件内容。")
+                        st.error("未提取到任何有效的制裁姓名！请确认是否上传了 PDF 或在文本框中粘贴了邮件内容。")
                     else:
                         # --- 执行比对逻辑 ---
-                        st.info(f"🔍 成功识别出 {len(sanction_names)} 个制裁目标，开始模糊比对...")
+                        st.info(f"成功识别出 {len(sanction_names)} 个制裁目标，开始模糊比对...")
                         
                         matches, scores, alerts = [], [], []
                         progress_bar = st.progress(0)
@@ -188,20 +188,20 @@ with col_right:
                         alert_count = sum(1 for a in alerts if a == "YES")
                         
                         # 显示报告汇总
-                        st.success(f"✅ 筛查完成！从制裁名单中识别出 **{len(sanction_names)}** 个目标。")
+                        st.success(f"筛查完成！从制裁名单中识别出 **{len(sanction_names)}** 个目标。")
                         if alert_count > 0:
-                            st.warning(f"🚨 共发现 **{alert_count}** 个高风险预警客户（匹配度 ≥ {threshold}%）。")
+                            st.warning(f"共发现 **{alert_count}** 个高风险预警客户（匹配度 ≥ {threshold}%）。")
                         else:
                             st.balloons()
-                            st.success("🎉 未发现高风险命中客户！")
+                            st.success("未发现高风险相似客户")
 
                         # 提供网页内置预览表格
-                        st.markdown("##### 📊 筛查预警结果预览 (前 10 条)")
+                        st.markdown("##### 筛查预警结果预览 (前 10 条)")
                         st.dataframe(df_customers.head(10), use_container_width=True)
 
                         # Streamlit 原生下载按钮
                         st.download_button(
-                            label="📥 点击下载完整的筛查报告 Excel",
+                            label="点击下载完整的筛查报告 Excel",
                             data=excel_bytes,
                             file_name="Sanction_Screening_Report.xlsx",
                             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
