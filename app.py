@@ -10,7 +10,7 @@ from rapidfuzz import process, fuzz
 def check_password():
     """只有密码正确才返回 True"""
     def password_entered():
-        if st.session_state["password"] == "YourStrongPassword123!": # 👈 替换为你设置的强密码
+        if st.session_state["password"] == "Cinda123": # 👈 替换为你设置的强密码
             st.session_state["password_correct"] = True
             del st.session_state["password"]  # 不在 session 里留明文
         else:
