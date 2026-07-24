@@ -12,60 +12,47 @@ import streamlit_authenticator as stauth
 # 0. 登录认证配置 (streamlit-authenticator v0.3+)
 # ==========================================
 
-# 1. 定义明文密码并自动生成安全哈希 (Hash)
-raw_passwords = ['cinda@alice', 'cinda@john', 'cinda@virginia']
-hasher = stauth.Hasher(raw_passwords)
-hashed_passwords = hasher.generate()
-
-# 2. 构建符合规范的用户字典结构
-credentials = {
-    "usernames": {
-        "alice": {
-            "name": "Alice",
-            "password": hashed_passwords[0]
-        },
-        "john": {
-            "name": "John",
-            "password": hashed_passwords[1]
-        },
-        "virginia": {
-            "name": "Virginia",
-            "password": hashed_passwords[2]
-        }
-    }
+# 预设允许登录的账号密码字典
+USER_CREDENTIALS = {
+    "alice": {"name": "Alice", "password": "cinda@alice"},
+    "john": {"name": "John", "password": "cinda@john"},
+    "virginia": {"name": "Virginia", "password": "cinda@virginia"}
 }
 
-# 3. 初始化认证器
-authenticator = stauth.Authenticate(
-    credentials=credentials,
-    cookie_name="sanction_screening_cookie",
-    key="sanction_auth_signature_key",
-    cookie_expiry_days=1
-)
+def login_form():
+    """渲染登录界面"""
+    st.title("系统登录")
+    st.markdown("Please enter yur authorized account account and password：")
+    
+    with st.form("login_form"):
+        username_input = st.text_input("Username").strip().lower()
+        password_input = st.text_input("Password", type="password")
+        submit_button = st.form_submit_button("Login", type="primary")
+        
+        if submit_button:
+            if username_input in USER_CREDENTIALS and USER_CREDENTIALS[username_input]["password"] == password_input:
+                st.session_state["authenticated"] = True
+                st.session_state["user_info"] = USER_CREDENTIALS[username_input]
+                st.rerun() # 登录成功，重新加载页面展示主界面
+            else:
+                st.error("❌ Please re-enter the username or password incorrectly")
 
-# 4. 渲染登录界面
-authenticator.login()
-
-# 获取登录状态
-authentication_status = st.session_state.get("authentication_status")
-name = st.session_state.get("name")
-username = st.session_state.get("username")
+# 检查登录状态
+if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
+    login_form()
+    st.stop() # 拦截：未登录则绝不渲染下方的主界面
 
 # ==========================================
-# 0. 登录拦截与业务逻辑控制
+# 1. 主界面 (登录成功后展示)
 # ==========================================
 
-if authentication_status is False:
-    st.error("❌ 用户名或密码错误")
-    st.stop()
-elif authentication_status is None:
-    st.warning("🔒 请在上方输入您的账号与密码进行登录")
-    st.stop()
-elif authentication_status:
-    # 登录成功后，在侧边栏显示欢迎信息和登出按钮
-    st.sidebar.success(f"👋 欢迎回来, **{name}** ({username})")
-    authenticator.logout("退出登录", "sidebar")
-
+# 侧边栏显示当前登录信息及退出按钮
+user_info = st.session_state["user_info"]
+st.sidebar.success(f"👋 欢迎回来, **{user_info['name']}**")
+if st.sidebar.button("退出登录"):
+    st.session_state["authenticated"] = False
+    st.session_state["user_info"] = None
+    st.rerun()
 
 st.set_page_config(
     page_title="反洗钱与制裁名单自动化筛查工具",
