@@ -6,32 +6,22 @@ import tempfile
 import streamlit as st
 from rapidfuzz import process, fuzz
 
-# ----------------- 简单安全登录校验 -----------------
-def check_password():
-    """只有密码正确才返回 True"""
-    def password_entered():
-        if st.session_state["password"] == "Cinda123": # 👈 替换为你设置的强密码
-            st.session_state["password_correct"] = True
-            del st.session_state["password"]  # 不在 session 里留明文
-        else:
-            st.session_state["password_correct"] = False
+import streamlit_authenticator as stauth
 
-    if "password_correct" not in st.session_state:
-        # 还没输入过密码
-        st.text_input("🔑 请输入系统访问密码：", type="password", on_change=password_entered, key="password")
-        return False
-    elif not st.session_state["password_correct"]:
-        # 密码错误
-        st.text_input("🔑 请输入系统访问密码：", type="password", on_change=password_entered, key="password")
-        st.error("❌ 密码错误，请输入正确的访问密码！")
-        return False
-    else:
-        # 密码正确
-        return True
+# 配置用户账号、姓名及加密后的密码散列值
+names = ['Alice', 'John', 'Virginia']
+usernames = ['alice', 'john', 'virginia']
+# 对应加密后的 password
+passwords = ['cinda@alice', 'cinda@john', 'cinda@virginia'] 
 
-if not check_password():
-    st.stop()  # 密码不对，直接拦截，后面的筛查界面不渲染！
-# ----------------------------------------------------
+authenticator = stauth.Authenticate(names, usernames, passwords, 'cookie_name', 'signature_key')
+name, authentication_status, username = authenticator.login('Main', 'main')
+
+if authentication_status:
+    st.write(f'欢迎回来, *{name}*')
+    # 放置你的筛查工具主体逻辑...
+elif authentication_status == False:
+    st.error('用户名或密码错误')
 
 # 下面是你原来的 st.title(...) 和业务逻辑代码...
 # ==========================================
