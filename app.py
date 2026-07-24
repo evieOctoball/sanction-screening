@@ -8,27 +8,67 @@ from rapidfuzz import process, fuzz
 
 import streamlit_authenticator as stauth
 
-# 配置用户账号、姓名及加密后的密码散列值
-names = ['Alice', 'John', 'Virginia']
-usernames = ['alice', 'john', 'virginia']
-# 对应加密后的 password
-passwords = ['cinda@alice', 'cinda@john', 'cinda@virginia'] 
-
-authenticator = stauth.Authenticate(names, usernames, passwords, 'cookie_name', 'signature_key')
-name, authentication_status, username = authenticator.login('Main', 'main')
-
-if authentication_status:
-    st.write(f'欢迎回来, *{name}*')
-    # 放置你的筛查工具主体逻辑...
-elif authentication_status == False:
-    st.error('用户名或密码错误')
-
-# 下面是你原来的 st.title(...) 和业务逻辑代码...
 # ==========================================
-# 0. 页面基本配置
+# 0. 登录认证配置 (streamlit-authenticator v0.3+)
 # ==========================================
+
+# 1. 定义明文密码并自动生成安全哈希 (Hash)
+raw_passwords = ['cinda@alice', 'cinda@john', 'cinda@virginia']
+hasher = stauth.Hasher(raw_passwords)
+hashed_passwords = hasher.generate()
+
+# 2. 构建符合规范的用户字典结构
+credentials = {
+    "usernames": {
+        "alice": {
+            "name": "Alice",
+            "password": hashed_passwords[0]
+        },
+        "john": {
+            "name": "John",
+            "password": hashed_passwords[1]
+        },
+        "virginia": {
+            "name": "Virginia",
+            "password": hashed_passwords[2]
+        }
+    }
+}
+
+# 3. 初始化认证器
+authenticator = stauth.Authenticate(
+    credentials=credentials,
+    cookie_name="sanction_screening_cookie",
+    key="sanction_auth_signature_key",
+    cookie_expiry_days=1
+)
+
+# 4. 渲染登录界面
+authenticator.login()
+
+# 获取登录状态
+authentication_status = st.session_state.get("authentication_status")
+name = st.session_state.get("name")
+username = st.session_state.get("username")
+
+# ==========================================
+# 0. 登录拦截与业务逻辑控制
+# ==========================================
+
+if authentication_status is False:
+    st.error("❌ 用户名或密码错误")
+    st.stop()
+elif authentication_status is None:
+    st.warning("🔒 请在上方输入您的账号与密码进行登录")
+    st.stop()
+elif authentication_status:
+    # 登录成功后，在侧边栏显示欢迎信息和登出按钮
+    st.sidebar.success(f"👋 欢迎回来, **{name}** ({username})")
+    authenticator.logout("退出登录", "sidebar")
+
+
 st.set_page_config(
-    page_title="Automated Sanction List Screener",
+    page_title="反洗钱与制裁名单自动化筛查工具",
     page_icon="🛡️",
     layout="wide"
 )
