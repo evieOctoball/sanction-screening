@@ -17,7 +17,7 @@ USER_CREDENTIALS = {
     "alice": {"name": "Donna", "password": "cinda@donna"},
     "john": {"name": "John", "password": "cinda@john"},
     "virginia": {"name": "Virginia", "password": "cinda@virginia"}
-    "Evie": {"name": "Virginia", "password": "123"}
+    "Evie": {"name": "Evie", "password": "123"}
 }
 
 def login_form():
