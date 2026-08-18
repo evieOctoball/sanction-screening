@@ -14,9 +14,10 @@ import streamlit_authenticator as stauth
 
 # 预设允许登录的账号密码字典
 USER_CREDENTIALS = {
-    "alice": {"name": "Alice", "password": "cinda@alice"},
+    "alice": {"name": "Donna", "password": "cinda@donna"},
     "john": {"name": "John", "password": "cinda@john"},
     "virginia": {"name": "Virginia", "password": "cinda@virginia"}
+    "Evie": {"name": "Virginia", "password": "123"}
 }
 
 def login_form():
