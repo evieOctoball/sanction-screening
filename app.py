@@ -16,7 +16,7 @@ import streamlit_authenticator as stauth
 USER_CREDENTIALS = {
     "alice": {"name": "Donna", "password": "cinda@donna"},
     "john": {"name": "John", "password": "cinda@john"},
-    "virginia": {"name": "Virginia", "password": "cinda@virginia"}
+    "virginia": {"name": "Virginia", "password": "cinda@virginia"},
     "Evie": {"name": "Evie", "password": "123"}
 }
 
