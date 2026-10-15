@@ -68,44 +68,57 @@ st.set_page_config(
 def extract_names_from_text(raw_text: str) -> list:
     """从纯文本（包括邮件粘贴内容或PDF转出的文本）中提取制裁姓名与别名"""
     sanction_names = []
-    
-    # 提取 "Name: 1: XXX 2: YYY" 格式的个人姓名
-    name_matches = re.findall(r'Name:\s*1:\s*([^\n2:]+)(?:\s*2:\s*([^\n3:]+))?', raw_text, re.IGNORECASE)
-    for m in name_matches:
+
+    # 1. 匹配带数字编号的 Name 格式（如：Name: 1: XXX 2: YYY）
+    numbered_name_matches = re.findall(
+        r'Name:\s*1:\s*([^\n2:]+)(?:\s*2:\s*([^\n3:]+))?', 
+        raw_text, 
+        re.IGNORECASE
+    )
+    for m in numbered_name_matches:
         p1 = m[0].strip() if m[0] and m[0].lower() != 'na' else ""
         p2 = m[1].strip() if m[1] and m[1].lower() != 'na' else ""
         full = f"{p1} {p2}".strip()
         if full:
             sanction_names.append(full)
-            
-    # 提取 "Good quality a.k.a.:" 中的别名
-    aka_matches = re.findall(r'Good quality a\.k\.a\.:\s*([^\n]+)', raw_text, re.IGNORECASE)
+
+    # 2. 匹配直接跟随姓名的 Name 格式（如：Name: BAZGHANDI, Ruhollah 或 Name (non-Latin): روح اله بازقندی）
+    direct_name_matches = re.findall(
+        r'Name(?:\s*\([^)]+\))?:\s*([^\n]+)', 
+        raw_text, 
+        re.IGNORECASE
+    )
+    for name_str in direct_name_matches:
+        # 排除已经匹配到的 "1: XXX" 结构
+        if not re.match(r'^\s*\d+:', name_str):
+            clean_name = name_str.strip()
+            if clean_name and clean_name.lower() != 'na':
+                sanction_names.append(clean_name)
+
+    # 3. 匹配别名：支持 "Good quality a.k.a.:" 及 "Primary Name Variations:"
+    aka_matches = re.findall(
+        r'(?:Good quality a\.k\.a\.|Primary Name Variations):\s*([^\n]+)', 
+        raw_text, 
+        re.IGNORECASE
+    )
     for aka_str in aka_matches:
         if aka_str.strip().lower() != 'na':
-            names = re.split(r'[a-z]\)', aka_str)
+            # 拆分带有 (1), (2) 或 a), b) 等前缀的多个别名
+            names = re.split(r'(?:\(\d+\)|[a-z]\))', aka_str)
             for n in names:
-                clean_n = re.sub(r'^[A-Z0-9\s,\.]+', '', n).strip()
+                # 清理开头的标点和空格
+                clean_n = re.sub(r'^[A-Z0-9\s,\.]+', '', n).strip() if not re.search(r'[\u4e00-\u9fa5\u0600-\u06FF]', n) else n.strip()
+                # 去除包含后续字段（如 Date of Birth 等）的杂质
+                clean_n = re.sub(r'\s*(Date of|Place of|Gender|Nationality).*$', '', clean_n, flags=re.IGNORECASE).strip()
                 if clean_n and len(clean_n) > 2 and clean_n.lower() != 'na':
                     sanction_names.append(clean_n)
 
-    # 兜底容错：如果邮件格式比较自由，没有标准的 Name: 结构，提取里面连续的大写人名/词组
+    # 4. 兜底容错：提取连续的首字母大写或全大写姓名（如 LASTNAME, Firstname）
     if not sanction_names:
-        fallback_matches = re.findall(r'([A-Z]{2,}(?:\s+[A-Z]{2,})+)', raw_text)
+        fallback_matches = re.findall(r'([A-Z]{2,},\s+[A-Za-z]+)', raw_text)
         sanction_names.extend([f.strip() for f in fallback_matches if len(f.strip()) > 3])
 
     return list(set(sanction_names))
-
-
-def extract_names_from_pdf(pdf_file) -> list:
-    """提取 PDF 里的文本并转为姓名列表"""
-    if pdf_file is None:
-        return []
-    
-    # Streamlit 的 UploadedFile 可以直接传给 pdfplumber
-    with pdfplumber.open(pdf_file) as pdf:
-        full_text = "\n".join([page.extract_text() or "" for page in pdf.pages])
-    
-    return extract_names_from_text(full_text)
 
 
 # ==========================================
